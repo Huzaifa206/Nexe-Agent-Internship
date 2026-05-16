@@ -11,7 +11,7 @@
 **6 production-grade Agentic AI applications built during the Nexe-Agent internship.**  
 Each task is a fully self-contained Streamlit app showcasing a different pillar of agentic AI development.
 
-[🌐 Portfolio](https://your-portfolio.vercel.app) · [📧 Contact](mailto:huzaifaasiddiqui@gmail.com) · [💼 LinkedIn](https://www.linkedin.com/in/huzaifaahmedsiddiqui48/)
+[🌐 Portfolio](https://nexe-agent-internship-portfolio.vercel.app/) · [📧 Contact](mailto:huzaifaasiddiqui@gmail.com) · [💼 LinkedIn](https://www.linkedin.com/in/huzaifaahmedsiddiqui48/)
 
 </div>
 
