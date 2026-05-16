@@ -20,7 +20,7 @@ client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.environ["OPENROUTER_API_KEY"],
 )
-MODEL = "deepseek/deepseek-v4-flash:free"
+MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # COMMUNICATION LAYER
