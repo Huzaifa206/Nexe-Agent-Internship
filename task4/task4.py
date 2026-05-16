@@ -7,21 +7,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Task 4 — RAG Assistant",
     page_icon="📚",
     layout="centered"
 )
 
-# ─── OpenRouter client ────────────────────────────────────────────────────────
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.environ["OPENROUTER_API_KEY"],
 )
 MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
-# ─── Lazy imports (heavy libraries) ───────────────────────────────────────────
+# lazy imports 
 @st.cache_resource(show_spinner="Loading embedding model...")
 def load_embedder():
     from sentence_transformers import SentenceTransformer
@@ -37,7 +35,7 @@ def load_chroma():
     )
     return chroma_client, collection
 
-# ─── Document parsing ─────────────────────────────────────────────────────────
+# document parsing 
 def parse_pdf(file_bytes: bytes) -> str:
     """Extracts text from a PDF file."""
     try:
@@ -74,7 +72,7 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 100) -> list[str
         start += chunk_size - overlap
     return chunks
 
-# ─── Vector store operations ──────────────────────────────────────────────────
+# vector store operations 
 def add_document(filename: str, text: str) -> dict:
     """Chunks a document and stores embeddings in ChromaDB."""
     _, collection = load_chroma()
@@ -86,7 +84,6 @@ def add_document(filename: str, text: str) -> dict:
     ids       = [f"{filename}_{i}" for i in range(len(chunks))]
     metadatas = [{"source": filename, "chunk": i} for i in range(len(chunks))]
 
-    # Remove existing chunks for this file to avoid duplicates
     try:
         existing = collection.get(where={"source": filename})
         if existing["ids"]:
@@ -133,7 +130,7 @@ def retrieve_context(query: str, n_results: int = 4) -> dict:
             "text":       doc,
             "source":     meta["source"],
             "chunk":      meta["chunk"],
-            "similarity": round(1 - dist, 3)   # cosine distance → similarity
+            "similarity": round(1 - dist, 3)   
         })
 
     return {
@@ -171,7 +168,6 @@ def delete_document(filename: str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-# ─── Tool schemas ─────────────────────────────────────────────────────────────
 TOOLS = [
     {
         "type": "function",
@@ -201,7 +197,6 @@ TOOLS = [
     }
 ]
 
-# ─── Tool dispatcher ──────────────────────────────────────────────────────────
 def run_tool(name: str, args: dict) -> str:
     if name == "retrieve_context":
         return json.dumps(retrieve_context(**args))
@@ -209,7 +204,7 @@ def run_tool(name: str, args: dict) -> str:
         return json.dumps(list_documents())
     return json.dumps({"error": f"Unknown tool: {name}"})
 
-# ─── Agentic loop ─────────────────────────────────────────────────────────────
+# agentic loop 
 def run_agent(messages: list) -> tuple[str, list, list]:
     tool_log = []
     while True:
@@ -249,7 +244,6 @@ def run_agent(messages: list) -> tuple[str, list, list]:
                 "content":      result,
             })
 
-# ─── UI ───────────────────────────────────────────────────────────────────────
 st.title("📚 Task 4 — RAG Assistant")
 st.caption("Agentic AI Developer Internship · Nexe-Agent")
 
@@ -260,7 +254,6 @@ The agent retrieves the most relevant sections and answers using only your docum
 
 st.divider()
 
-# ── Session state ─────────────────────────────────────────────────────────────
 if "rag_messages" not in st.session_state:
     st.session_state.rag_messages = [
         {
@@ -280,7 +273,6 @@ if "rag_history" not in st.session_state:
 if "indexed_docs" not in st.session_state:
     st.session_state.indexed_docs = []
 
-# ── Sidebar — document manager ────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 📁 Document Manager")
 
@@ -335,8 +327,6 @@ with st.sidebar:
     5. Most **similar chunks** are retrieved
     6. LLM answers using **only** those chunks
     """)
-
-# ── Chat display ──────────────────────────────────────────────────────────────
 if not docs:
     st.info("👈 Upload a document in the sidebar to get started.")
 
@@ -354,7 +344,6 @@ for entry in st.session_state.rag_history:
                                 st.markdown(f"> {chunk['text'][:300]}...")
                                 st.divider()
 
-# ── Chat input ────────────────────────────────────────────────────────────────
 suggestions = [
     "Summarize the main points of the document",
     "What does the document say about [topic]?",
@@ -408,7 +397,6 @@ if prompt:
                 st.error(err)
                 st.session_state.rag_history.append({"role": "assistant", "content": err})
 
-# ── Clear ─────────────────────────────────────────────────────────────────────
 if st.session_state.rag_history:
     st.divider()
     if st.button("🗑️ Clear conversation"):

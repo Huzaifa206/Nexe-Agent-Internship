@@ -6,14 +6,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Task 1 — Tool-Calling Agent",
     page_icon="🔧",
     layout="centered"
 )
 
-# ─── OpenRouter client ────────────────────────────────────────────────────────
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.environ["OPENROUTER_API_KEY"],
@@ -21,7 +19,6 @@ client = OpenAI(
 
 MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
-# ─── Tool functions ───────────────────────────────────────────────────────────
 def get_weather(city: str) -> dict:
     """Returns fake weather data for demo purposes."""
     data = {
@@ -39,7 +36,6 @@ def get_weather(city: str) -> dict:
 def calculate(expression: str) -> dict:
     """Safely evaluates a math expression."""
     try:
-        # Only allow safe math — no builtins
         allowed = {k: v for k, v in __import__("math").__dict__.items() if not k.startswith("_")}
         result = eval(expression, {"__builtins__": {}}, allowed)
         return {"expression": expression, "result": round(result, 6)}
@@ -56,7 +52,6 @@ def get_current_time() -> dict:
         "day": now.strftime("%A"),
     }
 
-# ─── Tool schemas (sent to the model) ────────────────────────────────────────
 TOOLS = [
     {
         "type": "function",
@@ -105,7 +100,6 @@ TOOLS = [
     }
 ]
 
-# ─── Tool dispatcher ──────────────────────────────────────────────────────────
 def run_tool(name: str, args: dict) -> str:
     """Calls the right function and returns result as JSON string."""
     if name == "get_weather":
@@ -118,13 +112,12 @@ def run_tool(name: str, args: dict) -> str:
         result = {"error": f"Unknown tool: {name}"}
     return json.dumps(result)
 
-# ─── Agentic loop ─────────────────────────────────────────────────────────────
 def run_agent(messages: list) -> tuple[str, list, list]:
     """
     Runs the agentic loop.
     Returns: (final_text, updated_messages, tool_calls_log)
     """
-    tool_log = []  # track what tools were called (for display)
+    tool_log = []  # track what tools were called 
 
     while True:
         response = client.chat.completions.create(
@@ -134,7 +127,7 @@ def run_agent(messages: list) -> tuple[str, list, list]:
         )
 
         msg = response.choices[0].message
-        # append as dict so it stays serializable in session state
+      
         messages.append({
             "role": "assistant",
             "content": msg.content,
@@ -148,11 +141,10 @@ def run_agent(messages: list) -> tuple[str, list, list]:
             ] or None
         })
 
-        # No tool calls → agent is done
+       
         if not msg.tool_calls:
             return msg.content, messages, tool_log
 
-        # Run each tool and collect results
         for tc in msg.tool_calls:
             args = json.loads(tc.function.arguments)
             result = run_tool(tc.function.name, args)
@@ -163,7 +155,6 @@ def run_agent(messages: list) -> tuple[str, list, list]:
                 "content": result,
             })
 
-# ─── UI ───────────────────────────────────────────────────────────────────────
 st.title("🔧 Task 1 — Tool-Calling Agent")
 st.caption("Agentic AI Developer Internship · Nexe-Agent")
 
@@ -178,7 +169,6 @@ It automatically decides which tool(s) to use based on your message.
 
 st.divider()
 
-# Suggested prompts
 st.markdown("**💡 Try these:**")
 cols = st.columns(3)
 suggestions = [
@@ -192,7 +182,6 @@ for i, s in enumerate(suggestions):
 
 st.divider()
 
-# Init session state
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {
@@ -205,9 +194,8 @@ if "messages" not in st.session_state:
         }
     ]
 if "display_history" not in st.session_state:
-    st.session_state.display_history = []  # list of {role, content, tool_log}
+    st.session_state.display_history = []  
 
-# Display previous messages
 for entry in st.session_state.display_history:
     with st.chat_message(entry["role"]):
         st.write(entry["content"])
@@ -219,20 +207,16 @@ for entry in st.session_state.display_history:
                     st.markdown(f"**Result:** `{call['result']}`")
                     st.divider()
 
-# Chat input — check prefill first
 prefill = st.session_state.pop("prefill", "")
 prompt = st.chat_input("Ask something...", key="chat_input") or prefill
 
 if prompt:
-    # Show user message
     with st.chat_message("user"):
         st.write(prompt)
     st.session_state.display_history.append({"role": "user", "content": prompt})
 
-    # Add to agent messages
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # Run agent
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
@@ -260,10 +244,9 @@ if prompt:
                 st.error(err)
                 st.session_state.display_history.append({"role": "assistant", "content": err})
 
-# Clear button
 if st.session_state.display_history:
     st.divider()
     if st.button("🗑️ Clear conversation"):
-        st.session_state.messages = [st.session_state.messages[0]]  # keep system prompt
+        st.session_state.messages = [st.session_state.messages[0]] 
         st.session_state.display_history = []
         st.rerun()

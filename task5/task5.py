@@ -9,21 +9,19 @@ from ddgs import DDGS
 
 load_dotenv()
 
-# ─── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Task 5 — Business Agent",
     page_icon="🏢",
     layout="wide"
 )
 
-# ─── OpenRouter client ────────────────────────────────────────────────────────
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.environ["OPENROUTER_API_KEY"],
 )
 MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
-# ─── SQLite execution log DB ──────────────────────────────────────────────────
+# SQLite 
 DB_PATH = "business_agent_logs.db"
 
 def init_db():
@@ -77,7 +75,6 @@ def get_logs(session_id=None):
     cols = ["id","session_id","goal","step_num","step_name","tool_used","input","output","status","timestamp"]
     return [dict(zip(cols, r)) for r in rows]
 
-# ─── Tool functions ───────────────────────────────────────────────────────────
 
 def create_plan(goal: str, context: str = "") -> dict:
     """
@@ -106,7 +103,7 @@ Respond ONLY with valid JSON in this exact format:
         max_tokens = 1000,
     )
     raw = response.choices[0].message.content.strip()
-    # strip markdown fences if present
+  
     raw = raw.replace("```json", "").replace("```", "").strip()
     try:
         plan = json.loads(raw)
@@ -207,7 +204,6 @@ def mark_step_done(step_num: int, step_name: str, result_summary: str) -> dict:
     return {"success": True, "step": step_num, "name": step_name, "marked": "completed"}
 
 
-# ─── Tool schemas ─────────────────────────────────────────────────────────────
 TOOLS = [
     {
         "type": "function",
@@ -317,7 +313,6 @@ TOOLS = [
     }
 ]
 
-# ─── Tool dispatcher ──────────────────────────────────────────────────────────
 def run_tool(name: str, args: dict) -> str:
     result = {}
     if name == "create_plan":
@@ -347,7 +342,7 @@ def run_tool(name: str, args: dict) -> str:
 
     return json.dumps(result)
 
-# ─── Agentic loop ─────────────────────────────────────────────────────────────
+# agentic loop
 def run_agent(messages: list, progress_bar=None, status_text=None) -> tuple[str, list, list]:
     tool_log  = []
     tool_count = 0
@@ -395,7 +390,6 @@ def run_agent(messages: list, progress_bar=None, status_text=None) -> tuple[str,
                 "content":      result,
             })
 
-# ─── UI ───────────────────────────────────────────────────────────────────────
 st.title("🏢 Task 5 — Autonomous Business Agent")
 st.caption("Agentic AI Developer Internship · Nexe-Agent")
 
@@ -409,7 +403,6 @@ Give this agent a **business goal**. It will autonomously:
 
 st.divider()
 
-# ── Session state ─────────────────────────────────────────────────────────────
 if "b_messages" not in st.session_state:
     st.session_state.b_messages = [
         {
@@ -435,7 +428,6 @@ if "b_session_id"      not in st.session_state:
     st.session_state.b_session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 if "b_current_goal"    not in st.session_state: st.session_state.b_current_goal     = ""
 
-# ── Layout: main + sidebar ────────────────────────────────────────────────────
 sidebar = st.sidebar
 
 with sidebar:
@@ -464,7 +456,6 @@ with sidebar:
 
     st.divider()
 
-    # Execution logs viewer
     st.markdown("### 📋 Execution Logs")
     logs = get_logs(st.session_state.b_session_id)
     if logs:
@@ -483,7 +474,6 @@ with sidebar:
         st.session_state.b_session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         st.rerun()
 
-# ── Suggested goals ───────────────────────────────────────────────────────────
 st.markdown("**💡 Example goals:**")
 c1, c2, c3 = st.columns(3)
 goals = [
@@ -500,7 +490,7 @@ if c3.button(goals[2], use_container_width=True):
 
 st.divider()
 
-# ── Chat history ──────────────────────────────────────────────────────────────
+# chat history 
 for entry in st.session_state.b_history:
     with st.chat_message(entry["role"]):
         st.markdown(entry["content"])
@@ -516,7 +506,6 @@ for entry in st.session_state.b_history:
                     else:
                         cols[1].json(call["result"] if len(json.dumps(call["result"])) < 500 else {"preview": str(call["result"])[:300] + "..."})
 
-# ── Inline report display ─────────────────────────────────────────────────────
 if st.session_state.b_report and not any(
     "b_report_shown" in e for e in st.session_state.b_history
 ):
@@ -530,7 +519,6 @@ if st.session_state.b_report and not any(
             key       = "download_top"
         )
 
-# ── Chat input ────────────────────────────────────────────────────────────────
 prefill = st.session_state.pop("b_prefill", "")
 prompt  = st.chat_input("Enter a business goal...") or prefill
 

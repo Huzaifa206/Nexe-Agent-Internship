@@ -11,15 +11,12 @@ from dotenv import load_dotenv
 from ddgs import DDGS
 
 load_dotenv()
-
-# ─── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Task 3 — Multi-Tool Agent",
     page_icon="🛠️",
     layout="centered"
 )
 
-# ─── OpenRouter client ────────────────────────────────────────────────────────
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.environ["OPENROUTER_API_KEY"],
@@ -27,7 +24,7 @@ client = OpenAI(
 
 MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
-# ─── SQLite setup ─────────────────────────────────────────────────────────────
+# SQLite
 DB_PATH = "agent_data.db"
 
 def init_db():
@@ -47,7 +44,6 @@ def init_db():
 
 init_db()
 
-# ─── Tool functions ───────────────────────────────────────────────────────────
 
 def web_search(query: str, max_results: int = 4) -> dict:
     """Searches the web using DuckDuckGo and returns results."""
@@ -146,8 +142,6 @@ def send_email(to_email: str, subject: str, body: str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-
-# ─── Tool schemas ─────────────────────────────────────────────────────────────
 TOOLS = [
     {
         "type": "function",
@@ -226,7 +220,6 @@ TOOLS = [
     }
 ]
 
-# ─── Tool dispatcher ──────────────────────────────────────────────────────────
 def run_tool(name: str, args: dict) -> str:
     if name == "web_search":
         return json.dumps(web_search(**args))
@@ -240,7 +233,6 @@ def run_tool(name: str, args: dict) -> str:
         return json.dumps(send_email(**args))
     return json.dumps({"error": f"Unknown tool: {name}"})
 
-# ─── Agentic loop ─────────────────────────────────────────────────────────────
 def run_agent(messages: list) -> tuple[str, list, list]:
     tool_log = []
 
@@ -282,7 +274,6 @@ def run_agent(messages: list) -> tuple[str, list, list]:
                 "content":      result,
             })
 
-# ─── UI ───────────────────────────────────────────────────────────────────────
 st.title("🛠️ Task 3 — Multi-Tool Agent")
 st.caption("Agentic AI Developer Internship · Nexe-Agent")
 
@@ -306,7 +297,6 @@ if not gmail_set:
 
 st.divider()
 
-# ── Suggested prompts ─────────────────────────────────────────────────────────
 st.markdown("**💡 Try these:**")
 c1, c2, c3 = st.columns(3)
 suggestions = [
@@ -323,7 +313,6 @@ if c3.button(suggestions[2], use_container_width=True):
 
 st.divider()
 
-# ── Session state ─────────────────────────────────────────────────────────────
 if "t3_messages" not in st.session_state:
     st.session_state.t3_messages = [
         {
@@ -340,7 +329,6 @@ if "t3_messages" not in st.session_state:
 if "t3_history" not in st.session_state:
     st.session_state.t3_history = []
 
-# ── Sidebar — saved notes viewer ──────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 💾 Saved Notes")
     notes_data = get_all_notes()
@@ -377,7 +365,6 @@ with st.sidebar:
             ```
             """)
 
-# ── Chat display ──────────────────────────────────────────────────────────────
 for entry in st.session_state.t3_history:
     with st.chat_message(entry["role"]):
         st.markdown(entry["content"])
@@ -393,7 +380,6 @@ for entry in st.session_state.t3_history:
                     col2.json(call["result"])
                     st.divider()
 
-# ── Chat input ────────────────────────────────────────────────────────────────
 prefill = st.session_state.pop("t3_prefill", "")
 prompt  = st.chat_input("Ask me to search, save, or email something...") or prefill
 
@@ -438,7 +424,6 @@ if prompt:
                 st.error(err)
                 st.session_state.t3_history.append({"role": "assistant", "content": err})
 
-# ── Clear ─────────────────────────────────────────────────────────────────────
 if st.session_state.t3_history:
     st.divider()
     if st.button("🗑️ Clear conversation"):

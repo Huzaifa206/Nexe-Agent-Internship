@@ -8,24 +8,17 @@ from ddgs import DDGS
 
 load_dotenv()
 
-# ─── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Task 6 — Multi-Agent System",
     page_icon="🤝",
     layout="wide"
 )
 
-# ─── OpenRouter client ────────────────────────────────────────────────────────
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.environ["OPENROUTER_API_KEY"],
 )
 MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# COMMUNICATION LAYER
-# Every message between agents is logged here so we can visualize it in the UI
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def post_message(sender: str, receiver: str, message_type: str, content: str):
     """Logs a message on the inter-agent communication bus."""
@@ -35,17 +28,12 @@ def post_message(sender: str, receiver: str, message_type: str, content: str):
         "id":        len(st.session_state.comm_bus) + 1,
         "sender":    sender,
         "receiver":  receiver,
-        "type":      message_type,   # task | result | error | status
+        "type":      message_type,   
         "content":   content,
         "timestamp": datetime.now().strftime("%H:%M:%S")
     })
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SPECIALIST AGENTS
-# Each has its own system prompt, tools, and run() function
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# ── Agent 1: Research Agent ───────────────────────────────────────────────────
+# agent 1
 RESEARCH_SYSTEM = """You are a Research Agent. Your ONLY job is to search the web and return factual, well-structured research findings.
 When given a research task:
 1. Use web_search to gather information
@@ -122,7 +110,7 @@ def run_research_agent(task: str) -> str:
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(output)})
 
 
-# ── Agent 2: Analyst Agent ────────────────────────────────────────────────────
+# agent 2
 ANALYST_SYSTEM = """You are an Analyst Agent. Your ONLY job is to analyze data and extract insights.
 When given data to analyze:
 1. Identify key patterns and trends
@@ -194,7 +182,7 @@ def run_analyst_agent(task: str, data: str) -> str:
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(output)})
 
 
-# ── Agent 3: Writer Agent ─────────────────────────────────────────────────────
+# agent 3
 WRITER_SYSTEM = """You are a Writer Agent. Your ONLY job is to write clear, professional content.
 When given content to write:
 1. Structure it with proper headings
@@ -230,10 +218,7 @@ Write a comprehensive, well-structured report using all the above."""
     return result
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# ORCHESTRATOR AGENT
-# Decides which specialist agents to call and in what order
-# ═══════════════════════════════════════════════════════════════════════════════
+# orchestrator
 
 ORCHESTRATOR_SYSTEM = """You are an Orchestrator Agent managing a team of specialist agents.
 Your team:
@@ -378,9 +363,7 @@ def run_orchestrator(user_request: str) -> tuple[str, list]:
             })
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# UI
-# ═══════════════════════════════════════════════════════════════════════════════
+# ui
 
 st.title("🤝 Task 6 — Multi-Agent System")
 st.caption("Agentic AI Developer Internship · Nexe-Agent")
@@ -398,19 +381,16 @@ A team of **4 specialized AI agents** collaborate to complete complex tasks:
 
 st.divider()
 
-# ── Session state ─────────────────────────────────────────────────────────────
 if "ma_history"  not in st.session_state: st.session_state.ma_history  = []
 if "comm_bus"    not in st.session_state: st.session_state.comm_bus     = []
 if "ma_report"   not in st.session_state: st.session_state.ma_report    = None
 
-# ── Sidebar — communication bus ───────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 📡 Agent Communication Bus")
     st.caption("Live messages between agents")
 
     bus = st.session_state.comm_bus
     if bus:
-        # Color map per agent
         colors = {
             "Orchestrator": "🎯",
             "ResearchAgent": "🔍",
@@ -439,7 +419,6 @@ with st.sidebar:
             st.session_state[key] = [] if key != "ma_report" else None
         st.rerun()
 
-# ── Suggested tasks ───────────────────────────────────────────────────────────
 st.markdown("**💡 Example tasks:**")
 c1, c2, c3 = st.columns(3)
 examples = [
@@ -456,7 +435,7 @@ if c3.button(examples[2], use_container_width=True):
 
 st.divider()
 
-# ── Chat history ──────────────────────────────────────────────────────────────
+# Chat history
 for entry in st.session_state.ma_history:
     with st.chat_message(entry["role"]):
         st.markdown(entry["content"])
@@ -481,7 +460,7 @@ for entry in st.session_state.ma_history:
                     key       = f"dl_{entry['timestamp']}"
                 )
 
-# ── Chat input ────────────────────────────────────────────────────────────────
+# Chat input 
 prefill = st.session_state.pop("ma_prefill", "")
 prompt  = st.chat_input("Give the agent team a task...") or prefill
 

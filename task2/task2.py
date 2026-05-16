@@ -7,22 +7,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Task 2 — AI Calculator Agent",
     page_icon="🧮",
     layout="centered"
 )
 
-# ─── OpenRouter client ────────────────────────────────────────────────────────
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.environ["OPENROUTER_API_KEY"],
 )
 
 MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
-
-# ─── Tool functions ───────────────────────────────────────────────────────────
 
 def calculate(expression: str) -> dict:
     """Evaluates a math expression. Supports all math module functions."""
@@ -86,8 +82,6 @@ def solve_steps(problem: str) -> dict:
         )
     }
 
-
-# ─── Tool schemas ─────────────────────────────────────────────────────────────
 TOOLS = [
     {
         "type": "function",
@@ -172,7 +166,6 @@ TOOLS = [
     }
 ]
 
-# ─── Tool dispatcher ──────────────────────────────────────────────────────────
 def run_tool(name: str, args: dict) -> str:
     if name == "calculate":
         return json.dumps(calculate(**args))
@@ -188,7 +181,6 @@ def run_tool(name: str, args: dict) -> str:
         return json.dumps(solve_steps(**args))
     return json.dumps({"error": f"Unknown tool: {name}"})
 
-# ─── Agentic loop ─────────────────────────────────────────────────────────────
 def run_agent(messages: list) -> tuple[str, list, list]:
     tool_log = []
 
@@ -216,11 +208,9 @@ def run_agent(messages: list) -> tuple[str, list, list]:
             ] or None
         })
 
-        # No tool calls → done
         if not msg.tool_calls:
             return msg.content, messages, tool_log
 
-        # Run tools
         for tc in msg.tool_calls:
             args   = json.loads(tc.function.arguments)
             result = run_tool(tc.function.name, args)
@@ -236,7 +226,6 @@ def run_agent(messages: list) -> tuple[str, list, list]:
                 "content":      result,
             })
 
-# ─── UI ───────────────────────────────────────────────────────────────────────
 st.title("🧮 Task 2 — AI Calculator Agent")
 st.caption("Agentic AI Developer Internship · Nexe-Agent")
 
@@ -250,7 +239,6 @@ This agent handles:
 
 st.divider()
 
-# ── Suggested prompts ─────────────────────────────────────────────────────────
 st.markdown("**💡 Try these:**")
 c1, c2, c3 = st.columns(3)
 suggestions = [
@@ -267,7 +255,6 @@ if c3.button(suggestions[2], use_container_width=True):
 
 st.divider()
 
-# ── Session state ─────────────────────────────────────────────────────────────
 if "calc_messages" not in st.session_state:
     st.session_state.calc_messages = [
         {
@@ -287,7 +274,6 @@ if "calc_history" not in st.session_state:
 if "memory_store" not in st.session_state:
     st.session_state.memory_store = {}
 
-# ── Memory sidebar panel ──────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 🧠 Memory Store")
     st.caption("Values saved during this session")
@@ -315,7 +301,6 @@ with st.sidebar:
     `**(power) ` `%(modulo)` 
     """)
 
-# ── Chat display ──────────────────────────────────────────────────────────────
 for entry in st.session_state.calc_history:
     with st.chat_message(entry["role"]):
         st.markdown(entry["content"])
@@ -328,7 +313,6 @@ for entry in st.session_state.calc_history:
                     cols[1].markdown(f"**Result**")
                     cols[1].json(call["result"])
 
-# ── Chat input ────────────────────────────────────────────────────────────────
 prefill = st.session_state.pop("prefill", "")
 prompt  = st.chat_input("Enter a math problem or question...") or prefill
 
@@ -370,7 +354,6 @@ if prompt:
                 st.error(err)
                 st.session_state.calc_history.append({"role": "assistant", "content": err})
 
-# ── Clear conversation ────────────────────────────────────────────────────────
 if st.session_state.calc_history:
     st.divider()
     if st.button("🗑️ Clear conversation"):
