@@ -526,7 +526,8 @@ if st.session_state.b_report and not any(
             "⬇️ Download Report",
             data      = st.session_state.b_report,
             file_name = "business_report.md",
-            mime      = "text/markdown"
+            mime      = "text/markdown",
+            key       = "download_top"
         )
 
 # ── Chat input ────────────────────────────────────────────────────────────────
@@ -584,7 +585,8 @@ if prompt:
                         "⬇️ Download Report",
                         data      = st.session_state.b_report,
                         file_name = "business_report.md",
-                        mime      = "text/markdown"
+                        mime      = "text/markdown",
+                        key       = "download_bottom"
                     )
 
             st.rerun()
